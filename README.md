@@ -2,15 +2,15 @@
 
 ## Business Case
 
-Coming soon!
+Editorial content on our website is tagged poorly on the backend. This hampers analysis and subsequent decision-making. We need to accomplish two things:
+
+1. Understand the underlying themes within our content
+2. Turn those themes into tags that can be properly applied to content either manually or programmatically (the latter to optimize tag enforcement)
 
 ## Proposed Solution
 
-Coming soon!
+Utilize data science, and more specifically, machine learning to algorithmically cluster this content as an exploratory analysis to uncover potiential theme candidates.
 
-## Why K-Means
-
-Coming soon!
 
 ## Project Status
 
