@@ -42,12 +42,18 @@ class AEMScraper(Scraper):
     @property
     def url_with_audience_role(self) -> str:
         """Creates a property for the full url with the audience role parameter included.
+
         :return: Full url with audience role parameter included
         :rtype: str
         """
         return self.full_path + '?audienceRole=' + self.audience_role
 
     def get_html(self) -> Response|None:
+        """Makes http get request to an AEM webpage.
+
+        :return: response object
+        :rtype: requests.Response
+        """
         params = {'audienceRole': self.audience_role}
         response = requests.get(self.full_path, params=params)
         self.status_code = response.status_code
