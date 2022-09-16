@@ -18,6 +18,8 @@ pd.set_option('display.precision', 3)
 
 us_report_path = 'data/aem_export_082422/xlsm/USNodePageReport_8.24.xlsm'
 extractor = ExcelToDataFrame(us_report_path)
+# ca_report_path = 'data/aem_export_082422/xlsm/CanadaNodePageReport_8.24.xlsm'
+# extractor = ExcelToDataFrame(ca_report_path)
 extractor.extract()
 df: DataFrame = extractor.df_list[0]
 # Only include insights pages
@@ -41,7 +43,7 @@ def process_urls(row):
 
 
 df = df.apply(process_urls, axis=1)
-test_export_path = us_report_path = 'data/test/'
+test_export_path = 'data/test/'
 df.to_csv(test_export_path + 'scraped.csv')
 
 

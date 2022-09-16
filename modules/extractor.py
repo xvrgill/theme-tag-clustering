@@ -34,7 +34,8 @@ class ExcelToDataFrame(Extractor):
             df['topic'] = df.apply(self.format_tags, axis=1, tag_name='topic')
             df['program'] = df.apply(self.format_tags, axis=1, tag_name='program')
             df['theme'] = df.apply(self.format_tags, axis=1, tag_name='theme')
-            df = df.apply(self.explode_authors, axis=1)
+            df['authors'] = df.apply(self.format_authors, axis=1)
+            df = df.explode('authors')
             df_list.append(df)
         self.sheet_names = sheet_names
         self.df_list = df_list
@@ -82,8 +83,14 @@ class ExcelToDataFrame(Extractor):
             return
         # Split string by semicolon delimiter
         user_role_list = str(user_roles).split(';')
-        # Drop EDJONES and PFS from list since they aren't valid url params
-        roles_to_drop = ['EDJONES', 'PFS']
+        # Drop audinence roles that aren't valid user role url parameters
+        roles_to_drop = [
+            'EDJONES',
+            'PFS',
+            '2021 DC Language Research Study',
+            'Indexing Solutions',
+            'Multi Alternatives Solutions'
+        ]
         for role in roles_to_drop:
             if role in user_role_list:
                 user_role_list.remove(role)
@@ -107,8 +114,12 @@ class ExcelToDataFrame(Extractor):
 
     def format_tags(self, row, tag_name: str):
         tags = row[tag_name]
-        tag_list = self.str_to_list(str(tags))
+        tag_list = list(self.str_to_list(str(tags)))
         tag_list_sans_double_spaces = [self.remove_double_spaces(x) for x in tag_list]
+        # new_list = []
+        # for tag in tag_list_sans_double_spaces:
+        #     print(tag)
+        #     new_list.append(tag)
         return tag_list_sans_double_spaces
 
     @staticmethod
@@ -120,21 +131,29 @@ class ExcelToDataFrame(Extractor):
         return string.replace('  ', ' ')
 
     @staticmethod
-    def format_authors(author_str: str):
+    def format_authors(row):
+        author_str = str(row['authors'])
         # Remove Invesco:person/ from string
         new_str = author_str.replace('invesco:person/', '')
         # Split string at semicolon delimiter
         author_list = new_str.split(';')
-        return author_list
+        # print(author_list)
+        return list(author_list)
 
-    def explode_authors(self, row):
-        author_str = str(row['authors'])
-        author_list = self.format_authors(author_str)
-        print(author_list  )
-        for i, author in enumerate(author_list):
-            column_name = f'author_{i+1}'
-            row[column_name] = author
-        return row
+    # def explode_authors(self, row):
+    #     author_str = str(row['authors'])
+    #     author_list = self.format_authors(author_str)
+    #     author_col_list = []
+    #     for i, author in enumerate(author_list):
+    #         author_col_list.append(author)
+    #         column_name = f'author_{i + 1}'
+    #         row[column_name] = author
+    #     row['authors'] = author_col_list
+    #     return row
+
+    # def explode_authors(self, df: DataFrame):
+    #     df = df.explode('authors')
+    #     return df
 
 
 class CSVToDataFrame(ExcelToDataFrame):
