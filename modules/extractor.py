@@ -5,6 +5,10 @@ import xlrd
 from xlrd import Book
 import numpy as np
 from typing import List
+from bs4 import BeautifulSoup
+from bs4.element import ResultSet, Tag
+from typing import Union
+from tqdm import tqdm
 
 
 class Extractor(ABC):
@@ -166,7 +170,7 @@ class CSVToDataFrame(ExcelToDataFrame):
         # May need create logic to pass in a particular sheet name
         return pd.read_csv(self.filename)
 
-
+# TODO: Review this class to see if it is required - likely unnecessary
 class XLSMToCSV(Extractor):
 
     def __init__(self, filename: str):
@@ -177,7 +181,6 @@ class XLSMToCSV(Extractor):
         self.sheet_row_count: list = self.get_sheet_row_count()
 
     def open_file(self):
-        # Open workbook
         return xlrd.open_workbook(self.filename)
 
     def get_sheet_count(self):
@@ -199,3 +202,187 @@ class XLSMToCSV(Extractor):
             frames.append(frame)
 
         return tuple(frames)
+
+
+class SGMExtractor(Extractor):
+
+    def __init__(self, file_path: str) -> None:
+        """ Base class for the extractor for SGM files
+
+        :param file_path: path to sgm file to be extracted
+        """
+        self.file_path = file_path
+        self.soup = self.create_soup(file_path)
+
+    @staticmethod
+    def create_soup(file_path: str) -> BeautifulSoup:
+        """ Creates BeautifulSoup object with lxml parser
+
+        :param file_path: path of file to be passed to BeautifulSoup
+        :return: BeautifulSoup object
+        """
+        with open(file_path, 'rb') as f:
+            # TODO: Allow for alternate parsers to be selected when called
+            soup = BeautifulSoup(f, features='lxml')
+
+        return soup
+
+
+class ReutersTextsExtractor(SGMExtractor):
+
+    def __init__(self, file_path: str) -> None:
+        """ Extractor for the Reuters corpus dataset
+
+        :param file_path: path of SGM file to be extracted
+        """
+
+        super().__init__(file_path)
+
+    def get_sgm_texts(self) -> ResultSet:
+        """ Retrieves all individual texts within the SGM file passed to the class
+
+        :return: Result set of all texts in the file
+        """
+
+        result = self.soup.find_all('reuters')
+
+        return result
+
+    @staticmethod
+    def get_text_date(result: Tag) -> str:
+        """ Find date tag and extract its text
+
+        :param result: A BeautifulSoup tag that represents the text data of an individual text
+        :return: The string representation of the tag's contents
+        """
+
+        # There should always be a date tag, so no need to handle attribute errors
+        date_tag: Tag = result.date
+        date = date_tag.get_text()
+
+        return date
+
+    @staticmethod
+    def get_text_topics(result: Tag) -> Union[list[str], None]:
+        topic_tag: Tag = result.topics
+        topic_wrappers = topic_tag.find_all('d')
+        if len(topic_wrappers) < 1:
+            return None
+        topic_list = [wrapper.get_text() for wrapper in topic_wrappers]
+
+        return topic_list
+
+    @staticmethod
+    def get_text_places(result: Tag):
+        places_tag: Tag = result.places
+        places_wrappers = places_tag.find_all('d')
+        if len(places_wrappers) < 1:
+            return None
+        places_list = [wrapper.get_text() for wrapper in places_wrappers]
+
+        return places_list
+
+    @staticmethod
+    def get_text_people(result: Tag):
+        people_tag: Tag = result.people
+        people_wrappers = people_tag.find_all('d')
+        if len(people_wrappers) < 1:
+            return None
+        people_list = [wrapper.get_text() for wrapper in people_wrappers]
+
+        return people_list
+
+    @staticmethod
+    def get_text_orgs(result: Tag):
+        orgs_tag: Tag = result.orgs
+        orgs_wrappers = orgs_tag.find_all('d')
+        if len(orgs_wrappers) < 1:
+            return None
+        orgs_list = [wrapper.get_text() for wrapper in orgs_wrappers]
+
+        return orgs_list
+
+    @staticmethod
+    def get_text_exchanges(result: Tag):
+        exchanges_tag: Tag = result.exchanges
+        exchanges_wrappers = exchanges_tag.find_all('d')
+        if len(exchanges_wrappers) < 1:
+            return None
+        exchanges_list = [wrapper.get_text() for wrapper in exchanges_wrappers]
+
+        return exchanges_list
+
+    @staticmethod
+    def get_text_companies(result: Tag):
+        companies_tag: Tag = result.companies
+        companies_wrappers = companies_tag.find_all('d')
+        if len(companies_wrappers) < 1:
+            return None
+        companies_list = [wrapper.get_text() for wrapper in companies_wrappers]
+
+        return companies_list
+
+    @staticmethod
+    def get_text_title(result: Tag):
+        try:
+            title_text = result.find('text').find('title').get_text()
+        except AttributeError:
+            return None
+        if len(title_text) < 1:
+            return None
+
+        return title_text
+
+    @staticmethod
+    def get_text_author(result: Tag):
+        try:
+            author_text = result.find('text').find('author').get_text()
+        except AttributeError:
+            return None
+        if len(author_text) < 1:
+            return None
+
+        return author_text
+
+    @staticmethod
+    def get_text_dateline(result: Tag):
+        try:
+            dateline_text = result.find('text').find('dateline').get_text()
+        except AttributeError:
+            return None
+        if len(dateline_text) < 1:
+            return None
+
+        return dateline_text
+
+    @staticmethod
+    def get_text_body(result: Tag):
+        try:
+            body_text = result.find('text').find('dateline').nextSibling.get_text()
+        except AttributeError:
+            return None
+        if len(body_text) < 1:
+            return None
+
+        return body_text
+
+    def extract(self):
+        texts_list = self.get_sgm_texts()
+        for text in tqdm(texts_list):
+            text_dict = {
+                'date': self.get_text_date(text),
+                'topics': self.get_text_topics(text),
+                'places': self.get_text_places(text),
+                'people': self.get_text_people(text),
+                'orgs': self.get_text_orgs(text),
+                'exchanges': self.get_text_exchanges(text),
+                'companies': self.get_text_companies(text),
+                'text': {
+                    'title': self.get_text_title(text),
+                    'author': self.get_text_author(text),
+                    'dateline': self.get_text_dateline(text),
+                    'body': self.get_text_body(text)
+                }
+            }
+            yield text_dict
+
