@@ -235,7 +235,6 @@ class ReutersTextsExtractor(SGMExtractor):
 
         :param file_path: path of SGM file to be extracted
         """
-
         super().__init__(file_path)
 
     def get_sgm_texts(self) -> ResultSet:
@@ -243,7 +242,6 @@ class ReutersTextsExtractor(SGMExtractor):
 
         :return: Result set of all texts in the file
         """
-
         result = self.soup.find_all('reuters')
 
         return result
@@ -255,7 +253,6 @@ class ReutersTextsExtractor(SGMExtractor):
         :param result: A BeautifulSoup tag that represents the text data of an individual text
         :return: The string representation of the tag's contents
         """
-
         # There should always be a date tag, so no need to handle attribute errors
         date_tag: Tag = result.date
         date = date_tag.get_text()
@@ -264,6 +261,11 @@ class ReutersTextsExtractor(SGMExtractor):
 
     @staticmethod
     def get_text_topics(result: Tag) -> Union[list[str], None]:
+        """ Finds topic tag and extracts all topics from within it
+
+        :param result: A BeautifulSoup tag that represents the text data of an individual text
+        :return: The list representation of topics
+        """
         topic_tag: Tag = result.topics
         topic_wrappers = topic_tag.find_all('d')
         if len(topic_wrappers) < 1:
@@ -273,7 +275,12 @@ class ReutersTextsExtractor(SGMExtractor):
         return topic_list
 
     @staticmethod
-    def get_text_places(result: Tag):
+    def get_text_places(result: Tag) -> Union[list[str], None]:
+        """ Finds the places tag and extracts all places from within it
+
+        :param result: A BeautifulSoup tag that represents the text data of an individual text
+        :return: The list representation of all places
+        """
         places_tag: Tag = result.places
         places_wrappers = places_tag.find_all('d')
         if len(places_wrappers) < 1:
@@ -284,6 +291,11 @@ class ReutersTextsExtractor(SGMExtractor):
 
     @staticmethod
     def get_text_people(result: Tag):
+        """ Finds the people tag and extracts all people from within it
+
+        :param result: A BeautifulSoup tag that represents the text data of an individual text
+        :return: The list representation of all people in the tag
+        """
         people_tag: Tag = result.people
         people_wrappers = people_tag.find_all('d')
         if len(people_wrappers) < 1:
@@ -294,6 +306,11 @@ class ReutersTextsExtractor(SGMExtractor):
 
     @staticmethod
     def get_text_orgs(result: Tag):
+        """ Finds the org tag and extracts all orgs from within it
+
+        :param result: A BeautifulSoup tag that represents the text data of an individual text
+        :return: The list representation of all orgs in the tag
+        """
         orgs_tag: Tag = result.orgs
         orgs_wrappers = orgs_tag.find_all('d')
         if len(orgs_wrappers) < 1:
@@ -304,6 +321,11 @@ class ReutersTextsExtractor(SGMExtractor):
 
     @staticmethod
     def get_text_exchanges(result: Tag):
+        """ Finds the exchanges tag and extracts all exchanges from within it
+
+        :param result: A BeautifulSoup tag that represents the text data of an individual text
+        :return: The list representation of all exchanges in the tag
+        """
         exchanges_tag: Tag = result.exchanges
         exchanges_wrappers = exchanges_tag.find_all('d')
         if len(exchanges_wrappers) < 1:
@@ -314,6 +336,11 @@ class ReutersTextsExtractor(SGMExtractor):
 
     @staticmethod
     def get_text_companies(result: Tag):
+        """ Finds the companies tag and extracts all companies from within it
+
+        :param result: A BeautifulSoup tag that represents the text data of an individual text
+        :return: The list representation of all companies in the tag
+        """
         companies_tag: Tag = result.companies
         companies_wrappers = companies_tag.find_all('d')
         if len(companies_wrappers) < 1:
@@ -323,7 +350,12 @@ class ReutersTextsExtractor(SGMExtractor):
         return companies_list
 
     @staticmethod
-    def get_text_title(result: Tag):
+    def get_text_title(result: Tag) -> Union[str, None]:
+        """ Finds the title tag and extracts its text contents
+
+        :param result: A BeautifulSoup tag that represents the text data of an individual text
+        :return: The publish date of the text
+        """
         try:
             title_text = result.find('text').find('title').get_text()
         except AttributeError:
@@ -335,6 +367,14 @@ class ReutersTextsExtractor(SGMExtractor):
 
     @staticmethod
     def get_text_author(result: Tag):
+        """ Finds the author tag and extracts its text contents.
+
+        This tag doesn't necessarily contain individual author names, but instead the author line in the text.
+        Example: 'by Foo Bar'
+
+        :param result: A BeautifulSoup tag that represents the text data of an individual text
+        :return: Author content in the text
+        """
         try:
             author_text = result.find('text').find('author').get_text()
         except AttributeError:
@@ -346,6 +386,13 @@ class ReutersTextsExtractor(SGMExtractor):
 
     @staticmethod
     def get_text_dateline(result: Tag):
+        """ Finds the dateline tag and extracts its contents.
+
+        The dateline is the date as it is represented in the text
+
+        :param result: A BeautifulSoup tag that represents the text data of an individual text
+        :return: Dateline content in the text
+        """
         try:
             dateline_text = result.find('text').find('dateline').get_text()
         except AttributeError:
@@ -357,6 +404,14 @@ class ReutersTextsExtractor(SGMExtractor):
 
     @staticmethod
     def get_text_body(result: Tag):
+        """ Finds the body content of the text and extracts it.
+
+        The body content is not within a body tag in the passed BeautifulSoup tag.
+        It exists a as the nearest sibling to the dateline tag.
+
+        :param result: A BeautifulSoup tag that represents the text data of an individual text
+        :return: Body content of the text
+        """
         try:
             body_text = result.find('text').find('dateline').nextSibling.get_text()
         except AttributeError:
@@ -367,6 +422,10 @@ class ReutersTextsExtractor(SGMExtractor):
         return body_text
 
     def extract(self):
+        """ Runs extractor to parse all documents in the passed SGM file.
+
+        :return: Yields individual text dictionary objects
+        """
         texts_list = self.get_sgm_texts()
         for text in tqdm(texts_list):
             text_dict = {

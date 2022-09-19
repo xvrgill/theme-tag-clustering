@@ -17,8 +17,7 @@ for file in files:
         texts.append(text_dict)
 
 print(f'Saving to json file: {json_save_path}')
-json_obj = json.dumps(texts, indent=4)
-with open(json_save_path, 'w') as f:
-    f.write(json_obj)
+with open(json_save_path, 'w', encoding='utf-8') as f:
+    json.dump(texts, f, indent=4)
 
 print('Extraction complete')
